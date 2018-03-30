@@ -1,0 +1,266 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Error Boundaries</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/night.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Custom styles -->
+		<link rel="stylesheet" href="assets/styles.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-markdown>
+					<textarea data-template>
+						# Planning On Bugs
+						*How to use error boundaries in React 16 to avoid crashed apps, improve user experience, and make debugging less painful.*
+						
+						[@kevinehosford](https://github.com/kevinehosford)
+					</textarea>
+				</section>
+				<section id="error-slide" data-markdown>
+					<textarea data-template>
+						### React 15 Errors
+						```
+						TypeError: Cannot read property 'getHostNode' of null
+							at getHostNode(~/react/lib/ReactReconciler.js:64:0)
+							at getHostNode(~/react/lib/ReactCompositeComponent.js:383:0)
+							at getHostNode(~/react/lib/ReactReconciler.js:64:0)
+							at getHostNode(~/react/lib/ReactChildReconciler.js:114:0)
+							at updateChildren(~/react/lib/ReactMultiChild.js:215:0)
+							at _reconcilerUpdateChildren(~/react/lib/ReactMultiChild.js:314:0)
+							at _updateChildren(~/react/lib/ReactMultiChild.js:301:0)
+							at updateChildren(~/react/lib/ReactDOMComponent.js:942:0)
+							at _updateDOMChildren(~/react/lib/ReactDOMComponent.js:760:0)
+							at updateComponent(~/react/lib/ReactDOMComponent.js:718:0)
+							at receiveComponent(~/react/lib/ReactReconciler.js:126:0)
+							at receiveComponent(~/react/lib/ReactCompositeComponent.js:751:0)
+							at _updateRenderedComponent(~/react/lib/ReactCompositeComponent.js:721:0)
+							at _performComponentUpdate(~/react/lib/ReactCompositeComponent.js:642:0)
+							at updateComponent(~/react/lib/ReactCompositeComponent.js:544:0)
+							at receiveComponent(~/react/lib/ReactReconciler.js:126:0)
+							at receiveComponent(~/react/lib/ReactCompositeComponent.js:751:0)
+							at _updateRenderedComponent(~/react/lib/ReactCompositeComponent.js:721:0)
+							at _performComponentUpdate(~/react/lib/ReactCompositeComponent.js:642:0)
+							at updateComponent(~/react/lib/ReactCompositeComponent.js:544:0)
+							at receiveComponent(~/react/lib/ReactReconciler.js:126:0)
+							at receiveComponent(~/react/lib/ReactCompositeComponent.js:751:0)
+							at _updateRenderedComponent(~/react/lib/ReactCompositeComponent.js:721:0)
+							at _performComponentUpdate(~/react/lib/ReactCompositeComponent.js:642:0)
+							at updateComponent(~/react/lib/ReactCompositeComponent.js:544:0)
+							at receiveComponent(~/react/lib/ReactReconciler.js:126:0)
+							at receiveComponent(~/react/lib/ReactCompositeComponent.js:751:0)
+							at _updateRenderedComponent(~/react/lib/ReactCompositeComponent.js:721:0)
+							at _performComponentUpdate(~/react/lib/ReactCompositeComponent.js:642:0)
+							at updateComponent(~/react/lib/ReactCompositeComponent.js:558:0)
+							at performUpdateIfNecessary(~/react/lib/ReactReconciler.js:158:0)
+							at performUpdateIfNecessary(~/react/lib/ReactUpdates.js:151:0)
+							at call(~/react/lib/Transaction.js:138:0)
+							at call(~/react/lib/Transaction.js:138:0)
+							at call(~/react/lib/ReactUpdates.js:90:0)
+							at perform(~/react/lib/ReactUpdates.js:173:0)
+							at call(~/react/lib/Transaction.js:204:0)
+							at closeAll(~/react/lib/Transaction.js:151:0)
+							at perform(~/react/lib/ReactDefaultBatchingStrategy.js:63:0) 💀
+							at batchedUpdates(~/react/lib/ReactUpdates.js:98:0)
+							at batchedUpdates(~/react/lib/ReactEventListener.js:150:0)
+						```
+						Can be cryptic and hard to debug. Could be swallowed by our own code.
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						### New In React 16: Error Boundaries
+						> An error boundary catches JS errors anywhere in the child component tree, logs the errors, and displays some fallback UI.
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						### How to make a boundary
+						```js
+							/** New component lifecycle */
+							componentDidCatch (error, info) {
+								// set a flag to not render children
+								this.setState({ hasError: true })
+							}
+						```
+
+						This method is called when there is an error during rendering, in a lifecycle method, or in the constructor of any child component.
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						### Reusable Error Boundary: Good
+						```js
+						class ErrorBoundary extends React.Component {
+							state = { hasError: false }
+
+							componentDidCatch (error, info) {
+								// set a flag that we should no longer render children
+								this.setState({ hasError: true })
+							}
+
+							render () {
+								return this.state.hasError
+									? <p>Oh no! Something broke.</p>
+									: this.props.children
+							}
+						}
+						```
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						### Reusable Error Boundary: Better
+						```js
+							render () {
+								// accept a fallback component prop (or default?)
+								const CustomFallback = this.props.errorComponent
+
+								return this.state.hasError
+									? <CustomFallback />
+									: this.props.children
+							}
+						```
+					</textarea>
+				</section>
+				<section data-markdown>
+						<textarea data-template>
+							### What to wrap???
+						</textarea>
+					</section>
+				<section data-markdown>
+					<textarea data-template>
+						### Wrap Entire App
+
+						```js
+							const ErrorBoundedApp = () => (
+								<ErrorBoundary>
+									<App />
+								</ErrorBoundary>
+							)
+
+							ReactDOM.render(
+								<ErrorBoundedApp />,
+								document.getElementById('app'
+							)
+						```
+						React 16 unmounts whole component tree when an error is uncaught!
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						### Wrap Route
+
+						```js
+							<div>
+								<nav>
+									<Link to='/'>Home</Link>
+									<Link to='/support'>Support</Link>
+								</nav>
+								<Route path='/feed' render={() => (
+									<ErrorBoundary>
+										<Feed />
+									</ErrorBoundary>
+								)} />
+							</div>
+						```
+						Let the user navigate somewhere else.
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+					### Wrap Components
+
+					```js
+					class AnotherSocialMediaApp extends React.Component {
+						render () {
+							return (
+								<div>
+									<ErrorBoundary><FriendList /></ErrorBoundary>
+									<ErrorBoundary><ChatWindow /></ErrorBoundary>
+								</div>
+							)
+						}
+					}
+					```
+					Non-broken components remain interactive.
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+					### Logging
+					
+					```js
+					componentDidCatch(error, info) {
+						// good
+						console.log(
+							info.componentStack
+						)
+
+						// better - send to monitoring service, e.g. sentry.io
+						Logger.captureException(error, { extra: info })
+					}
+					```
+					Exceptions caught by an error boundary no longer reach a global handler.
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						### Further Reading
+
+						[reactjs.org/blog](https://reactjs.org/blog/2017/07/26/error-handling-in-react-16.html)
+						
+						[reactjs.org/docs](https://reactjs.org/docs/react-component.html#componentdidcatch)
+						
+						[blog.sentry.io](https://blog.sentry.io/2017/09/28/react-16-error-boundaries)
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						### Error Demo
+						[Here's code with a bug](https://codepen.io/dashboard)
+					</textarea>
+				</section>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				],
+				controls: false,
+				loop: true,
+				transition: 'fade',
+				progress: false
+			});
+		</script>
+	</body>
+</html>

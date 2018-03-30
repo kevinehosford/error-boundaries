@@ -1,0 +1,37 @@
+.container {
+  height: 90%;
+  width: 90%;  
+}
+
+.dark-container {
+  background: rgba(0,0,0,.75);
+}
+
+.hljs {
+  background: #111;
+}
+
+.reveal pre {
+  box-shadow: none;
+}
+
+.reveal blockquote {
+  background: #111;
+}
+
+.reveal pre code {
+  overflow: hidden;
+}
+
+.error-console {
+  color: #FFF0F0;
+}
+
+.error-console-line {
+  color: #1958C9;
+}
+
+.error-console-stack {
+  color: #334313
+  color: #FC0D1C;
+}
